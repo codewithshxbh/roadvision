@@ -73,8 +73,30 @@ if image_file is not None:
     w_ori = _image.shape[1]
 
     image_resized = cv2.resize(_image, (640, 640), interpolation = cv2.INTER_AREA)
-    results = net.predict(image_resized, conf=score_threshold)
+    import numpy as np
+    from PIL import Image
     
+    image_resized = np.asarray(image_resized)
+    
+    if image_resized.ndim == 2:
+        image_resized = np.stack([image_resized] * 3, axis=-1)
+    
+    if image_resized.shape[-1] == 4:
+        image_resized = image_resized[:, :, :3]
+    
+    image_resized = np.ascontiguousarray(image_resized, dtype=np.uint8)
+    
+    st.write("Image shape:", image_resized.shape)
+    st.write("Image dtype:", image_resized.dtype)
+    st.write("Model type:", type(net).__name__)
+    
+    results = net.predict(
+        source=image_resized,
+        conf=float(score_threshold),
+        device="cpu",
+        verbose=False
+    )
+        
     # Save the results
     for result in results:
         boxes = result.boxes.cpu().numpy()
